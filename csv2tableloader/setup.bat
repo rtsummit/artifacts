@@ -1,0 +1,1 @@
+pip install pyinstaller==4.2

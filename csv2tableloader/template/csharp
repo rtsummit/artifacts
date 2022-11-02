@@ -1,0 +1,130 @@
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+
+namespace GR
+{{
+    public class {messageName}Data
+    {{
+{dataClassDefinitionCode}
+    }}
+
+    [SingletonBase(true, HideFlags.HideAndDontSave)]
+    public class {messageName}Table : SingletonBase<{messageName}Table>
+    {{
+        private bool _inited = false;
+
+        private List<{messageName}Data> _list = new List<{messageName}Data>();
+        private Dictionary<{keyType}, {messageName}Data> _map = new Dictionary<{keyType}, {messageName}Data>();
+
+        public List<{messageName}Data> GetTable()
+        {{
+            return _list;
+        }}
+
+        public {messageName}Data GetData({keyType} key)
+        {{
+            return _map.ContainsKey(key) ? _map[key] : null;
+        }}
+
+        protected override void Awake()
+        {{
+            base.Awake();
+
+            Init();
+        }}
+
+        public bool IsInited()
+        {{
+            return _inited;
+        }}
+
+        public bool Init()
+        {{
+            return Import();
+        }}
+
+        public void Clear()
+        {{
+            _list.Clear();
+            _map.Clear();
+
+            _inited = false;
+        }}
+
+        private bool InitFromCSV(string fileName)
+        {{
+/*
+            string path = AresStaticConfig.DataFilePath + "/" + fileName;
+            CSVTableReader reader;
+
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {{
+                // remove bom
+                var bom = new byte[3];
+                fs.Read(bom, 0, 3);
+                if (bom[0] == 0xFF && bom[1] == 0xFE || bom[0] == 0xFE && bom[1] == 0xFF)
+                {{
+                    fs.Seek(2, SeekOrigin.Begin);
+                }}
+                else if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
+                {{
+                    fs.Seek(3, SeekOrigin.Begin);
+                }}
+                else
+                {{
+                    fs.Seek(0, SeekOrigin.Begin);
+                }}
+
+                using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
+                {{
+                    reader = new CSVTableReader(sr.ReadToEnd());
+                }}
+            }}
+*/
+            var t = Resources.Load(Path.GetFileNameWithoutExtension(fileName)) as TextAsset;
+            if (null == t)
+            {{
+                GRLogger.LogError("Cannot find file {fileName}");
+                return false;
+            }}
+            var reader = new CSVTableReader(t.text);
+
+            var table = reader.GetTable("{tableName}");
+            if (null == table)
+            {{
+                GRLogger.LogError("[ERROR] cannot find table '{tableName}' from file '{fileName}'");
+                return false;
+            }}
+
+            foreach (List<object> row in table)
+            {{
+                var ctx = new {messageName}Data();
+
+{csvColumnImportCode}
+
+                _list.Add(ctx);
+
+                _map.Add({callProtoKeyField}, ctx);
+            }}
+
+            return true;
+        }}
+
+        public bool Import()
+        {{
+            Clear();
+
+            if (false == InitFromCSV("{fileName}"))
+            {{
+                return false;
+            }}
+
+            _inited = true;
+            return true;
+        }}
+    }}
+}}
